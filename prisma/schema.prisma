@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  image         String?
+  emailVerified DateTime?
+  accounts      Account[]
+  chats         Chat[]
+  files         File[]
+  sessions      Session[]
+  quizzes       Quiz[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  title     String?
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+}
+
+model Message {
+  id             String          @id @default(cuid())
+  content        String
+  role           MessageRole
+  chatId         String
+  createdAt      DateTime        @default(now())
+  chat           Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  messageFiles   MessageFile[]
+  messageSources MessageSource[]
+}
+
+model MessageFile {
+  id        String  @id @default(cuid())
+  messageId String
+  fileId    String
+  file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, fileId])
+}
+
+model MessageSource {
+  id        String  @id @default(cuid())
+  messageId String
+  fileId    String
+  file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id             String          @id @default(uuid())
+  userId         String
+  fileType       String
+  name           String
+  size           Int
+  supabaseFileId String
+  supabasePath   String
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageFiles   MessageFile[]
+  messageSources MessageSource[]
+  quizzes        Quiz[]
+}
+
+model Quiz {
+  id                String        @id @default(cuid())
+  userId            String
+  fileId            String
+  title             String
+  quizType          QuizType
+  numberOfQuestions Int
+  createdAt         DateTime      @default(now())
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file              File          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  quizAttempts      QuizAttempt[]
+}
+
+model QuizAttempt {
+  id             String   @id @default(cuid())
+  quizId         String
+  score          Int
+  totalQuestions Int
+  answers        Json
+  completedAt    DateTime @default(now())
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum QuizType {
+  MCQ
+  SAQ
+  LAQ
+}
