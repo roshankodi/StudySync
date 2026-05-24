@@ -94,48 +94,55 @@ export const chatRouter = createTRPCRouter({
       });
     }),
 
-  uploadFiles: protectedProcedure
-    .input(
-      z.object({
-        base64Files: z.array(
-          z.object({
-            name: z.string(),
-            type: z.string(),
-            base64: z.string(),
-          }),
-        ),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const { base64Files } = input;
-        const files = base64Files.map((file) =>
-          base64ToFile(file.base64, file.name),
-        );
-
-        const uploadedFiles = await Promise.all(
-          files.map(async (file) => {
-            try {
-              return await uploadToSupabase(file, ctx.session.user.id);
-            } catch (error) {
-              console.error("Error uploading file:", error);
-              throw new Error(`Failed to upload file: ${file.name}`);
-            }
-          }),
-        );
-
-        return {
-          files: uploadedFiles.map((f) => ({
-            id: f.id,
-            name: f.name,
-            fileType: f.type,
-          })),
-        };
-      } catch (error) {
-        console.error("Error in uploadFiles mutation:", error);
-        throw new Error("Failed to upload files");
-      }
+uploadFiles: protectedProcedure
+  .input(
+    z.object({
+      base64Files: z.array(
+        z.object({
+          name: z.string(),
+          type: z.string(),
+          base64: z.string(),
+        }),
+      ),
     }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    try {
+      const userId = ctx.session?.user?.id;
+
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      const files = input.base64Files.map((file) =>
+        base64ToFile(file.base64, file.name),
+      );
+
+      const uploadedFiles = await Promise.all(
+        files.map(async (file) => {
+          return await uploadToSupabase(
+            file,
+            userId, // pass valid session id
+          );
+        }),
+      );
+
+      return {
+        files: uploadedFiles.map((f) => ({
+          id: f.id,
+          name: f.name,
+          fileType: f.fileType,
+        })),
+      };
+    } catch (error) {
+      console.error(
+        "Error in uploadFiles mutation:",
+        error,
+      );
+
+      throw new Error("Failed to upload files");
+    }
+  }),
 
   listFiles: protectedProcedure.query(async ({ ctx }) => {
     const files = await ctx.db.file.findMany({
@@ -292,10 +299,10 @@ Format your response as JSON:
 Make sure to return valid JSON only.`;
 
         const result = await generateText({
-          model: google("gemini-2.0-flash-exp"),
-          prompt,
-          temperature: 0.7,
-        });
+  model: google("gemini-2.5-flash"),
+  prompt,
+  temperature: 0.7,
+});
 
         let quizData: { questions?: unknown[] } | undefined;
         try {
@@ -335,7 +342,7 @@ Make sure to return valid JSON only.`;
       }
     }),
 
-    getDashboardStats: protectedProcedure.query(async ({ ctx }) => {
+getDashboardStats: protectedProcedure.query(async ({ ctx }) => {
   const userId = ctx.session.user.id;
 
   const totalDocuments = await ctx.db.file.count({
@@ -404,150 +411,20 @@ Make sure to return valid JSON only.`;
 
   const studyTimeHours =
     Math.round(
-      (weeklyQuizzes.length * 0.25 +
-        weeklyMessages.length * 0.08) *
-        10,
+      (
+        weeklyQuizzes.length * 0.25 +
+        weeklyMessages.length * 0.08
+      ) * 10,
     ) / 10;
 
   return {
     totalDocuments,
     quizzesCompleted,
-    averageScore:
-      averageScore || undefined,
+    averageScore: averageScore || undefined,
     studyTimeHours,
     streak,
   };
 }),
-
-        quizzesCompleted = quizAttempts.length;
-
-        if (quizAttempts.length > 0) {
-          const totalPercentage = quizAttempts.reduce(
-            (sum, attempt) =>
-              sum +
-              Math.round(
-                (attempt.score / attempt.totalQuestions) * 100
-              ),
-            0
-          );
-
-          averageScore = Math.round(
-            totalPercentage / quizAttempts.length
-          );
-        }
-      } catch (err) {
-        console.log("Quiz stats skipped:", err);
-      }
-
-      try {
-        const userMessages = await ctx.db.message.findMany({
-          where: {
-            chat: { userId },
-          },
-          select: {
-            createdAt: true,
-          },
-        });
-
-        streak = calculateStreak(
-          userMessages.map((m) => m.createdAt)
-        );
-
-        studyTimeHours =
-          Math.round(userMessages.length * 0.08 * 10) / 10;
-      } catch (err) {
-        console.log("Message stats skipped:", err);
-      }
-
-      return {
-        totalDocuments,
-        quizzesCompleted,
-        averageScore,
-        studyTimeHours,
-        streak,
-      };
-    } catch (err) {
-      console.error("Dashboard stats error:", err);
-
-      return {
-        totalDocuments: 0,
-        quizzesCompleted: 0,
-        averageScore: 0,
-        studyTimeHours: 0,
-        streak: 0,
-      };
-    }
-  }),
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const quizAttempts = await ctx.db.quizAttempt.findMany({
-      where: {
-        quiz: { userId },
-      },
-      select: {
-        score: true,
-        totalQuestions: true,
-        completedAt: true,
-      },
-      orderBy: {
-        completedAt: "desc",
-      },
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const quizzesCompleted = quizAttempts.length;
-
-    let averageScore = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (quizAttempts.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      const totalPercentage = quizAttempts.reduce((sum, attempt) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-        return sum + Math.round((attempt.score / attempt.totalQuestions) * 100);
-      }, 0);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      averageScore = Math.round(totalPercentage / quizAttempts.length);
-    }
-
-    const userMessages = await ctx.db.message.findMany({
-      where: {
-        chat: { userId },
-      },
-      orderBy: { createdAt: "desc" },
-      select: {
-        createdAt: true,
-      },
-    });
-
-    const streak = calculateStreak(userMessages.map((m) => m.createdAt));
-
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const weeklyQuizzes = quizAttempts.filter(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (attempt) => attempt.completedAt >= oneWeekAgo,
-    );
-    const weeklyMessages = userMessages.filter(
-      (m) => m.createdAt >= oneWeekAgo,
-    );
-
-    const studyTimeHours =
-      Math.round(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        (weeklyQuizzes.length * 0.25 + weeklyMessages.length * 0.08) * 10,
-      ) / 10;
-
-    return {
-      totalDocuments,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      quizzesCompleted,
-      averageScore: averageScore || undefined,
-      studyTimeHours,
-      streak,
-    };
-  }),
 
   saveQuizAttempt: protectedProcedure
     .input(

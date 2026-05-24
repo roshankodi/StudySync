@@ -45,42 +45,62 @@ const ensureCollectionExists = async () => {
 };
 
 const PROMPT = `
-### IMPERATIVE:  
-You are a world-class research assistant. Your task is to analyze the user's QUESTION based *exclusively* on the provided CONTEXT from documents and also generate a *perfect formatted and aligned response to the user.
+You are an intelligent AI tutor and document assistant.
 
-## CONTEXT:
+## CONTEXT
 ---
 {context}
 ---
 
-## CHAT HISTORY:
+## CHAT HISTORY
 ---
 {chatHistory}
 ---
 
-## QUESTION:
+## QUESTION
 {question}
 
-### INSTRUCTIONS:
-1.  **Analyze the CONTEXT:** Answer the QUESTION using only the information within the CONTEXT section. Do not use any external knowledge.
-2.  **Cite Sources:** For every piece of information you use from the CONTEXT, you MUST provide a precise citation.
+## RULES
 
-3.  **Unique Citations:** Each citation must have a unique sequential number, even if multiple facts come from the same source. Do not repeat numbers. For example: [1], [2], [3], [4], etc.
+1. If relevant information exists in CONTEXT:
+   - Use it as the primary source.
+   - Explain the answer naturally.
+   - Include citations inline where appropriate.
 
-4.  **No Information:** If the CONTEXT does not contain the answer, state clearly "Based on the provided documents, I cannot answer this question."
+2. If CONTEXT is incomplete:
+   - First use available context.
+   - Then provide additional explanation using general knowledge.
+   - Clearly separate:
+   
+   "From uploaded documents:"
+   
+   and
+   
+   "Additional explanation:"
 
-5.  **Formatting:** The response must be perfectly structured and formatted with consistent indentation. and dont show all the Citations at the end of the response.
+3. If no relevant document information exists:
+   - Still answer normally using your knowledge.
+   - Do NOT say:
+   
+   "Based on the provided documents, I cannot answer this question."
 
-6. **Academic or Subject Questions:**
-   - If the QUESTION is related to an academic topic (e.g., science, math, literature, economics, technology, etc.), include a section at the end titled:
-     **"🎥 Relevant YouTube Resources"**
-     - List 2–3 YouTube video links that can help the user understand the topic further.
-     - The videos must be *educational and reliable* (official channels, university lectures, or verified educators).
+4. Behave like a tutor:
+   - Explain concepts simply.
+   - Use examples.
+   - Break difficult ideas into steps.
+   - Keep responses readable.
 
+5. Citation format:
 
-## CITATION RULES (APPLY STRICTLY):
--   Format: <citation source-id="[ID]" file-page-number="[Page Number]" file-id="[File ID]" cited-text="[Exact Quoted Text]">[ID]</citation>
--   Example: <citation source-id="1" file-page-number="5" file-id="e5232b9a-ab12..." cited-text="The company's revenue in 2023 was $1.2B.">[1]</citation>
+<citation source-id="[ID]"
+file-page-number="[Page]"
+file-id="[FILE_ID]"
+cited-text="[QUOTE]">[ID]</citation>
+
+6. Do NOT automatically generate YouTube links.
+
+7. Never refuse unless the request is unsafe.
+
 `;
 
 const requestSchema = z.object({
@@ -202,43 +222,84 @@ export async function POST(req: NextRequest) {
           : undefined,
     });
 
-    let searchResult;
-    try {
-      searchResult = await qdrantClient.search(collectionName, {
-        vector: queryEmbedding as number[],
-        limit: 5,
-        with_payload: true,
-        filter:
-          allRelevantFileIds && allRelevantFileIds.length > 0
-            ? { must: [{ key: "fileId", match: { any: allRelevantFileIds } }] }
-            : undefined,
-      });
-    } catch (err) {
-      console.error("Qdrant search error:", err);
-      throw err;
-    }
+let searchResults;
 
-    const context = searchResult
-      .map((result, index) => {
-        type PayloadType = {
-          content?: string;
-          fileId?: string;
-          loc?: { pageNumber?: number };
-        };
+try {
+  searchResults = await qdrantClient.search(
+    collectionName,
+    {
+      vector: queryEmbedding as number[],
+      limit: 5,
+      with_payload: true,
+      filter:
+        allRelevantFileIds &&
+        allRelevantFileIds.length > 0
+          ? {
+              must: [
+                {
+                  key: "fileId",
+                  match: {
+                    any: allRelevantFileIds,
+                  },
+                },
+              ],
+            }
+          : undefined,
+    },
+  );
 
-        const payload = result.payload as PayloadType;
-        const content = payload?.content ?? "";
-        const fileId = payload?.fileId ?? "";
-        const pageNumber = payload?.loc?.pageNumber ?? 1;
+  console.log(
+    "Retrieved chunks:",
+    searchResults.length,
+  );
 
-        return `---
+  console.log(
+    "Filtered results:",
+    searchResults.map((r) => ({
+      score: r.score,
+      preview:
+        ((r.payload as { content?: string })
+          ?.content ?? "")
+          .substring(0, 100),
+    })),
+  );
+} catch (err) {
+  console.error(
+    "Qdrant search error:",
+    err,
+  );
+
+  throw err;
+}
+
+const context = searchResults
+  .map((result, index) => {
+    type PayloadType = {
+      content?: string;
+      fileId?: string;
+      loc?: { pageNumber?: number };
+    };
+
+    const payload =
+      result.payload as PayloadType;
+
+    const content =
+      payload?.content ?? "";
+
+    const fileId =
+      payload?.fileId ?? "";
+
+    const pageNumber =
+      payload?.loc?.pageNumber ?? 1;
+
+    return `---
 Source ID: ${index + 1}
 File ID: ${fileId}
 Page Number: ${pageNumber}
 Content: ${content}
 ---`;
-      })
-      .join("\n\n");
+  })
+  .join("\n\n");
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {

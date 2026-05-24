@@ -105,11 +105,11 @@ const worker = new Worker<FileJobData>(
 
       const docs = await loader.load();
 
-      const splitter =
-        new RecursiveCharacterTextSplitter({
-          chunkSize: 1000,
-          chunkOverlap: 200,
-        });
+            const splitter =
+      new RecursiveCharacterTextSplitter({
+        chunkSize:500,
+        chunkOverlap:100
+      });
 
       const chunks =
         await splitter.splitDocuments(docs);
