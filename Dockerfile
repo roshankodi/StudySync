@@ -20,9 +20,13 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
+# Copy package files
 COPY package.json package-lock.json* ./
 
-# Install ALL deps (including devDependencies for Prisma/build)
+# IMPORTANT: copy Prisma schema BEFORE npm install
+COPY prisma ./prisma
+
+# Install all deps including devDependencies
 RUN npm ci --legacy-peer-deps
 
 # Stage 3: Build app
@@ -39,7 +43,7 @@ ENV SKIP_ENV_VALIDATION=1
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build Next.js app
+# Build Next.js
 RUN npm run build
 
 # Stage 4: Production image
@@ -52,11 +56,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy required files only
+# Copy app files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
@@ -67,4 +70,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node","server.js"]
