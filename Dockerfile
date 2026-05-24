@@ -10,7 +10,13 @@ RUN apk add --no-cache \
     libc6-compat \
     python3 \
     make \
-    g++
+    g++ \
+    pkgconfig \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    pixman-dev
 
 WORKDIR /app
 
