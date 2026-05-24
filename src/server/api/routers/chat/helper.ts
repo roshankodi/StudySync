@@ -1,83 +1,66 @@
-import { supabase } from "@/lib/supabase";
 import { Queue } from "bullmq";
+import IORedis from "ioredis";
+import { v4 as uuidv4 } from "uuid";
+
+import { supabase } from "@/lib/supabase";
 import { db } from "@/server/db";
 
-interface FileUploadResponse {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  path: string;
-  url?: string;
-}
-
-const getRedisConnection = () => {
-  if (process.env.UPSTASH_REDIS_REST_URL) {
-    return {
-      host: process.env.UPSTASH_REDIS_REST_URL.replace(
-        "https://",
-        "",
-      ).replace("http://", ""),
-      port: 6380,
-      password: process.env.UPSTASH_REDIS_REST_TOKEN,
-      tls: {},
-    };
-  } else if (process.env.REDIS_HOST && process.env.REDIS_PORT) {
-    return {
+const redis = process.env.REDIS_URL
+  ? new IORedis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+    })
+  : new IORedis({
       host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT),
-    };
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+      maxRetriesPerRequest: null,
+    });
+
+export const uploadQueue = new Queue(
+  "file-upload-queue",
+  {
+    connection: redis,
   }
-  return null;
-};
-
-const redisConnection = getRedisConnection();
-
-const fileQueue = redisConnection
-  ? new Queue("file-upload-queue", { connection: redisConnection })
-  : new Queue("file-upload-queue");
+);
 
 export async function uploadToSupabase(
   file: File,
   userId: string,
-): Promise<FileUploadResponse> {
-  const safeFileName = file.name.replace(/[^\w.]/gi, "_");
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
-  const key = `${new Date().getTime()}-${randomSuffix}-${safeFileName}`;
+) {
+  try {
+    const fileId = uuidv4();
 
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from("files")
-    .upload(key, file, {
-      cacheControl: "3600",
-      upsert: false,
-      duplex: "half",
-      metadata: {
-        user_id: userId,
+    const filePath = `${userId}/${fileId}-${file.name}`;
+
+    const { error } = await supabase.storage
+      .from("documents") // IMPORTANT: your actual bucket
+      .upload(filePath, file);
+
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw error;
+    }
+
+    const createdFile = await db.file.create({
+      data: {
+        id: fileId,
+        userId,
+        name: file.name,
+        size: file.size,
+        fileType: file.type,
+        supabasePath: filePath,
       },
     });
 
-  if (uploadError || !uploadData) {
-    console.error("Error uploading file to Supabase:", uploadError);
-    throw new Error("Failed to upload file");
+    await uploadQueue.add(
+      "process-file",
+      {
+        fileId: createdFile.id,
+      }
+    );
+
+    return createdFile;
+  } catch (err) {
+    console.error("uploadToSupabase error:", err);
+    throw err;
   }
-
-  const dbFile = await db.file.create({
-    data: {
-      name: safeFileName,
-      fileType: file.type || "application/octet-stream",
-      supabaseFileId: uploadData.id,
-      supabasePath: uploadData.path,
-      size: file.size,
-      userId,
-    },
-  });
-
-  await fileQueue.add("file-ready", { fileId: dbFile.id });
-  return {
-    name: dbFile.name,
-    size: dbFile.size,
-    type: dbFile.fileType,
-    path: dbFile.supabasePath,
-    id: dbFile.id,
-  };
 }

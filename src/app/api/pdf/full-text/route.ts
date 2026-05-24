@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from("files")
+      .from("documents")
       .download(file.supabasePath);
 
     if (downloadError || !fileData) {

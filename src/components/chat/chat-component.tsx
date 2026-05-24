@@ -276,7 +276,7 @@ export function ChatComponent({ chatId }: ChatComponentProps) {
                                 ))}
                               </div>
                             )}
-                            <p className="whitespace-pre-wrap">
+                            <div className="whitespace-pre-wrap">
                               {message.parts
                                 ?.filter((part) => part.type === "text")
                                 .map((part, _index) => (
@@ -302,8 +302,7 @@ export function ChatComponent({ chatId }: ChatComponentProps) {
                                                 handleCitationClick({
                                                   messageId: message.id,
                                                   citedText: rest["cited-text"],
-                                                  pageNumber:
-                                                    rest["file-page-number"],
+                                                  pageNumber: rest["file-page-number"],
                                                   fileId: rest["file-id"],
                                                   sourceId: rest["source-id"],
                                                 })
@@ -318,6 +317,7 @@ export function ChatComponent({ chatId }: ChatComponentProps) {
                                                 : children}
                                             </span>
                                           </TooltipTrigger>
+
                                           <TooltipContent className="citation-tooltip max-w-sm p-3 text-sm">
                                             <div className="space-y-1">
                                               <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -336,7 +336,7 @@ export function ChatComponent({ chatId }: ChatComponentProps) {
                                     {part.text}
                                   </Streamdown>
                                 ))}
-                            </p>
+                            </div>
                           </div>
                         </div>
                       </div>

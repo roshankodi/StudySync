@@ -176,7 +176,7 @@ export const chatRouter = createTRPCRouter({
       try {
         // Delete from Supabase storage
         const { error: storageError } = await supabase.storage
-          .from("files")
+          .from("documents")
           .remove([file.supabasePath]);
 
         if (storageError) {
@@ -335,12 +335,149 @@ Make sure to return valid JSON only.`;
       }
     }),
 
-  getDashboardStats: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
+    getDashboardStats: protectedProcedure.query(async ({ ctx }) => {
+  const userId = ctx.session.user.id;
 
-    const totalDocuments = await ctx.db.file.count({
-      where: { userId },
-    });
+  const totalDocuments = await ctx.db.file.count({
+    where: { userId },
+  });
+
+  const quizAttempts = await ctx.db.quizAttempt.findMany({
+    where: {
+      quiz: { userId },
+    },
+    select: {
+      score: true,
+      totalQuestions: true,
+      completedAt: true,
+    },
+    orderBy: {
+      completedAt: "desc",
+    },
+  });
+
+  const quizzesCompleted = quizAttempts.length;
+
+  let averageScore = 0;
+
+  if (quizAttempts.length > 0) {
+    const totalPercentage = quizAttempts.reduce(
+      (sum, attempt) =>
+        sum +
+        Math.round(
+          (attempt.score / attempt.totalQuestions) * 100,
+        ),
+      0,
+    );
+
+    averageScore = Math.round(
+      totalPercentage / quizAttempts.length,
+    );
+  }
+
+  const userMessages = await ctx.db.message.findMany({
+    where: {
+      chat: { userId },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      createdAt: true,
+    },
+  });
+
+  const streak = calculateStreak(
+    userMessages.map((m) => m.createdAt),
+  );
+
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  const weeklyQuizzes = quizAttempts.filter(
+    (attempt) => attempt.completedAt >= oneWeekAgo,
+  );
+
+  const weeklyMessages = userMessages.filter(
+    (m) => m.createdAt >= oneWeekAgo,
+  );
+
+  const studyTimeHours =
+    Math.round(
+      (weeklyQuizzes.length * 0.25 +
+        weeklyMessages.length * 0.08) *
+        10,
+    ) / 10;
+
+  return {
+    totalDocuments,
+    quizzesCompleted,
+    averageScore:
+      averageScore || undefined,
+    studyTimeHours,
+    streak,
+  };
+}),
+
+        quizzesCompleted = quizAttempts.length;
+
+        if (quizAttempts.length > 0) {
+          const totalPercentage = quizAttempts.reduce(
+            (sum, attempt) =>
+              sum +
+              Math.round(
+                (attempt.score / attempt.totalQuestions) * 100
+              ),
+            0
+          );
+
+          averageScore = Math.round(
+            totalPercentage / quizAttempts.length
+          );
+        }
+      } catch (err) {
+        console.log("Quiz stats skipped:", err);
+      }
+
+      try {
+        const userMessages = await ctx.db.message.findMany({
+          where: {
+            chat: { userId },
+          },
+          select: {
+            createdAt: true,
+          },
+        });
+
+        streak = calculateStreak(
+          userMessages.map((m) => m.createdAt)
+        );
+
+        studyTimeHours =
+          Math.round(userMessages.length * 0.08 * 10) / 10;
+      } catch (err) {
+        console.log("Message stats skipped:", err);
+      }
+
+      return {
+        totalDocuments,
+        quizzesCompleted,
+        averageScore,
+        studyTimeHours,
+        streak,
+      };
+    } catch (err) {
+      console.error("Dashboard stats error:", err);
+
+      return {
+        totalDocuments: 0,
+        quizzesCompleted: 0,
+        averageScore: 0,
+        studyTimeHours: 0,
+        streak: 0,
+      };
+    }
+  }),
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const quizAttempts = await ctx.db.quizAttempt.findMany({
