@@ -17,7 +17,7 @@ export async function uploadToSupabase(
 
     const filePath = `${userId}/${fileId}-${file.name}`;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await getSupabase().storage
       .from("documents")
       .upload(filePath, file, {
         upsert: true,

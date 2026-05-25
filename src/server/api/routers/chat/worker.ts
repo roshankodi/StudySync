@@ -93,7 +93,7 @@ const worker = new Worker<FileJobData>(
       }
 
       const { data: fileBlob, error } =
-        await supabase.storage
+        await getSupabase().storage
           .from("documents")
           .download(fileRecord.supabasePath);
 

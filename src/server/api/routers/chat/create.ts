@@ -184,7 +184,7 @@ uploadFiles: protectedProcedure
 
       try {
         // Delete from Supabase storage
-        const { error: storageError } = await supabase.storage
+        const { error: storageError } = await getSupabase().storage
           .from("documents")
           .remove([file.supabasePath]);
 

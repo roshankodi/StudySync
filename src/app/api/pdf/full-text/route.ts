@@ -3,17 +3,12 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { createClient } from "@supabase/supabase-js";
 import { db } from "@/server/db";
 
-function getSupabase() {
+export function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL missing");
-  }
-
-  if (!key) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY missing");
-  }
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL missing");
+  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY missing");
 
   return createClient(url, key);
 }
@@ -44,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: fileData, error: downloadError } =
-      await supabase.storage
+      await getSupabase().storage
         .from("documents")
         .download(file.supabasePath);
 
