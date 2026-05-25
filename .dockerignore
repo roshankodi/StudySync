@@ -22,18 +22,7 @@ prisma/db.sqlite-journal
 db.sqlite
 
 # Testing
-coverage
-
-# Misc
-.DS_Store
-*.pem
-.idea
-.vscode
-
-# Docker
-.dockerignore
-Dockerfile
-docker-compose.yml
+coverage/
 
 # Git
 .git
@@ -43,38 +32,30 @@ docker-compose.yml
 logs
 *.log
 
-# Runtime data
+# Runtime
 pids
 *.pid
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
-coverage/
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
+# Optional caches
 .npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# ESLint cache
 .eslintcache
-
-# Prettier cache
 .prettier-cache
+
+# IDE files
+.idea
+.vscode
+.DS_Store
 
 # Storage
 storage/
 
 # Vercel
 .vercel
+
+# Misc
+*.pem
+*.tgz
+.node_repl_history
+jspm_packages/
