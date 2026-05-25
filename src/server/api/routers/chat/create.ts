@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { base64ToFile } from "@/lib/utils";
 import { uploadToSupabase } from "./helper";
-
+import { getSupabase } from "@/lib/supabase";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 
@@ -164,45 +164,57 @@ uploadFiles: protectedProcedure
     return files;
   }),
 
-  deleteFile: protectedProcedure
-    .input(z.object({ fileId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const file = await ctx.db.file.findFirst({
-        where: {
-          id: input.fileId,
-          userId: ctx.session.user.id,
-        },
-      });
+deleteFile: protectedProcedure
+  .input(
+    z.object({
+      fileId: z.string(),
+    }),
+  )
+  .mutation(async ({ ctx, input }) => {
+    const file = await ctx.db.file.findFirst({
+      where: {
+        id: input.fileId,
+        userId: ctx.session.user.id,
+      },
+    });
 
-      if (!file) {
-        throw new Error(
-          "File not found or you don't have permission to delete it",
+    if (!file) {
+      throw new Error(
+        "File not found or you don't have permission to delete it",
+      );
+    }
+
+    try {
+      const { error: storageError } = await getSupabase()
+        .storage
+        .from("documents")
+        .remove([file.supabasePath]);
+
+      if (storageError) {
+        console.error(
+          "Supabase delete failed:",
+          storageError,
         );
       }
+    } catch (err) {
+      console.error(
+        "Storage cleanup error:",
+        err,
+      );
+    }
 
-      try {
-        // Delete from Supabase storage
-        const { error: storageError } = await getSupabase().storage
-          .from("documents")
-          .remove([file.supabasePath]);
+    await ctx.db.file.delete({
+      where: {
+        id: file.id,
+      },
+    });
 
-        if (storageError) {
-          console.error("Error deleting from Supabase storage:", storageError);
-        }
+    return {
+      success: true,
+    };
+  }),
 
-        // Delete from database
-        await ctx.db.file.delete({
-          where: { id: input.fileId },
-        });
-
-        return { success: true };
-      } catch (error) {
-        console.error("Error deleting file:", error);
-        throw new Error("Failed to delete file");
-      }
-    }),
-
-  generateQuiz: protectedProcedure
+generateQuiz: protectedProcedure
     .input(
       z.object({
         fileId: z.string(),
@@ -227,7 +239,10 @@ uploadFiles: protectedProcedure
           );
         }
 
-        const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+        const baseUrl =
+       process.env.NEXT_PUBLIC_APP_URL ??
+       process.env.NEXTAUTH_URL ??
+        "http://localhost:3000";
         const response = await fetch(
           `${baseUrl}/api/pdf/full-text?fileId=${fileId}`,
         );
