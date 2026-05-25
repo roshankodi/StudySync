@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { db } from "@/server/db";
-import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
+import { getSupabase, STORAGE_BUCKET } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const file = await db.file.findUnique({
-      where: { id: fileId }
+      where: { id: fileId },
     });
 
     console.log("DB file:", file);
@@ -31,26 +31,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(
-      "Downloading:",
-      file.supabasePath
-    );
+    const supabase = getSupabase();
+
+    console.log("Downloading:", file.supabasePath);
 
     const { data, error } =
       await supabase.storage
         .from(STORAGE_BUCKET)
         .download(file.supabasePath);
 
-    console.log(
-      "Download error:",
-      error
-    );
+    console.log("Download error:", error);
 
     if (error || !data) {
       return NextResponse.json(
         {
           error: "Failed downloading PDF",
-          details: error
+          details: error,
         },
         { status: 500 }
       );
@@ -59,7 +55,7 @@ export async function GET(request: NextRequest) {
     const blob = new Blob(
       [await data.arrayBuffer()],
       {
-        type: "application/pdf"
+        type: "application/pdf",
       }
     );
 
@@ -77,7 +73,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       fullText,
       pageCount: docs.length,
-      fileName: file.name
+      fileName: file.name,
     });
 
   } catch (err) {
@@ -85,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: "PDF extraction failed"
+        error: "PDF extraction failed",
       },
       { status: 500 }
     );
