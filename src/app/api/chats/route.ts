@@ -5,14 +5,20 @@ const genAI = new GoogleGenerativeAI(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
 );
 
+interface ChatRequest {
+  message?: string;
+  messages?: {
+    content: string;
+  }[];
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body: ChatRequest = await req.json();
 
-    // Support both single message and messages array
     const message =
-      body.message ||
-      body.messages?.[body.messages.length - 1]?.content ||
+      body.message ??
+      body.messages?.[body.messages.length - 1]?.content ??
       "Hello";
 
     const model = genAI.getGenerativeModel({
@@ -21,16 +27,13 @@ export async function POST(req: Request) {
 
     const result = await model.generateContent(message);
 
-    const response = await result.response;
+    const response = result.response;
     const text = response.text();
-
-    console.log("AI Response:", text);
 
     return NextResponse.json({
       role: "assistant",
       content: text,
     });
-
   } catch (error) {
     console.error("CHAT ERROR:", error);
 

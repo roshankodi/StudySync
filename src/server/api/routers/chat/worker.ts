@@ -19,7 +19,7 @@ const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 const qdrantClient = new QdrantClient({
   url: process.env.QDRANT_URL,
-  apiKey: process.env.QDRANT_API_KEY || undefined,
+  apiKey: process.env.QDRANT_API_KEY ?? undefined,
 });
 
 const collectionName = "document-embeddings-hf";
@@ -57,8 +57,8 @@ function getRedisConnection() {
   }
 
   return new IORedis({
-    host: process.env.REDIS_HOST || "127.0.0.1",
-    port: parseInt(process.env.REDIS_PORT || "6379"),
+    host: process.env.REDIS_HOST ?? "127.0.0.1",
+    port: parseInt(process.env.REDIS_PORT ?? "6379"),
     maxRetriesPerRequest: null,
   });
 }
