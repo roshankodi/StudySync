@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
 );
 
-interface ChatRequest {
+interface ChatBody {
   message?: string;
   messages?: {
     content: string;
@@ -14,7 +14,7 @@ interface ChatRequest {
 
 export async function POST(req: Request) {
   try {
-    const body: ChatRequest = await req.json();
+    const body = (await req.json()) as ChatBody;
 
     const message =
       body.message ??
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       role: "assistant",
       content: text,
     });
+
   } catch (error) {
     console.error("CHAT ERROR:", error);
 
