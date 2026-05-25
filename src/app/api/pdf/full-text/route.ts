@@ -1,35 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { createClient } from "@supabase/supabase-js";
 import { db } from "@/server/db";
-
-export function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL missing");
-  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY missing");
-
-  return createClient(url, key);
-}
+import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabase();
-
     const { searchParams } = new URL(request.url);
+
     const fileId = searchParams.get("fileId");
+
+    console.log("fileId:", fileId);
 
     if (!fileId) {
       return NextResponse.json(
-        { error: "File ID is required" },
+        { error: "Missing fileId" },
         { status: 400 }
       );
     }
 
     const file = await db.file.findUnique({
-      where: { id: fileId },
+      where: { id: fileId }
     });
+
+    console.log("DB file:", file);
 
     if (!file) {
       return NextResponse.json(
@@ -38,52 +31,62 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: fileData, error: downloadError } =
-      await getSupabase().storage
-        .from("documents")
+    console.log(
+      "Downloading:",
+      file.supabasePath
+    );
+
+    const { data, error } =
+      await supabase.storage
+        .from(STORAGE_BUCKET)
         .download(file.supabasePath);
 
-    if (downloadError || !fileData) {
+    console.log(
+      "Download error:",
+      error
+    );
+
+    if (error || !data) {
       return NextResponse.json(
-        { error: "Failed to download file" },
+        {
+          error: "Failed downloading PDF",
+          details: error
+        },
         { status: 500 }
       );
     }
 
-    const buffer = Buffer.from(
-      await fileData.arrayBuffer()
-    );
-
     const blob = new Blob(
-      [buffer],
-      { type: "application/pdf" }
+      [await data.arrayBuffer()],
+      {
+        type: "application/pdf"
+      }
     );
 
     const loader = new PDFLoader(blob);
 
     const docs = await loader.load();
 
-    let fullText = "";
-
-    docs.forEach((doc, index) => {
-      fullText += `\n\n--- Page ${index + 1} ---\n\n`;
-      fullText += doc.pageContent;
-    });
+    const fullText = docs
+      .map(
+        (doc, i) =>
+          `--- Page ${i + 1} ---\n${doc.pageContent}`
+      )
+      .join("\n\n");
 
     return NextResponse.json({
-      fullText: fullText.trim(),
+      fullText,
       pageCount: docs.length,
-      fileName: file.name,
+      fileName: file.name
     });
 
-  } catch (error) {
-    console.error(
-      "Error extracting PDF text:",
-      error
-    );
+  } catch (err) {
+    console.error(err);
 
     return NextResponse.json(
-      { error: "Failed to extract PDF text" },
+      {
+        error: "PDF extraction failed"
+      },
       { status: 500 }
     );
   }
