@@ -87,6 +87,14 @@ function QuizPageContent() {
     .toLowerCase()
     .replace(/[^\w\s]/g, "");
 
+  // Exact inclusion check
+  if (
+    normalizedCorrect.includes(normalizedUser) ||
+    normalizedUser.includes(normalizedCorrect)
+  ) {
+    return true;
+  }
+
   const correctWords = normalizedCorrect
     .split(/\s+/)
     .filter(Boolean);
@@ -99,8 +107,9 @@ function QuizPageContent() {
     correctWords.includes(word),
   );
 
+  // Compare against USER answer length instead
   const similarity =
-    matchedWords.length / Math.max(correctWords.length, 1);
+    matchedWords.length / Math.max(userWords.length, 1);
 
   return similarity >= 0.6;
 };
