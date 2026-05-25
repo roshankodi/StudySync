@@ -151,31 +151,37 @@ export function ChatList() {
   const sections = groupChatsByDate(chats);
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="space-y-5">
-        {sections.map((section) => (
-          <div key={section.title}>
-            <div className="px-2 pt-3 pb-2">
-              <h3 className="text-xs font-medium tracking-wider uppercase text-gray-500">
-                {section.title}
-              </h3>
-            </div>
+  <ScrollArea className="flex-1">
+    <div className="space-y-5">
+      {sections.map((section) => (
+        <div key={section.title}>
+          <div className="px-2 pt-3 pb-2 first:pt-0">
+            <h3 className="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+              {section.title}
+            </h3>
+          </div>
 
-            {section.chats.map((chat) => (
-              <div
-                key={chat.id}
+          {section.chats.map((chat) => (
+            <div
+              key={chat.id}
+              className="group relative flex items-center"
+            >
+              <Button
+                asChild
+                variant="ghost"
                 className={cn(
-                  "group relative flex items-center rounded-md",
+                  "relative h-auto w-full justify-start px-3 py-2.5 text-left font-normal",
+                  "rounded-md text-sm text-gray-700 transition-colors duration-150",
+                  "hover:bg-blue-50 hover:text-gray-900 hover:ring-1 hover:ring-blue-200",
+                  "dark:text-gray-300 dark:hover:bg-blue-950/50 dark:hover:text-white dark:hover:ring-blue-800",
                   currentChatId === chat.id &&
-                    "bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:ring-blue-800"
+                    "bg-blue-50 text-gray-900 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-white dark:ring-blue-800"
                 )}
+                size="sm"
               >
                 <Link
                   href={`/chat/${chat.id}`}
-                  className={cn(
-                    "flex-1 rounded-md px-3 py-2.5 text-sm text-gray-700 transition-colors",
-                    "hover:bg-blue-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-blue-950/50 dark:hover:text-white"
-                  )}
+                  className="block w-full truncate pr-8"
                 >
                   <div className="truncate">
                     {chat.title ?? "New Chat"}
@@ -185,21 +191,29 @@ export function ChatList() {
                     {formatRelativeTime(new Date(chat.updatedAt))}
                   </div>
                 </Link>
+              </Button>
 
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
 
-                    if (confirm("Delete this chat?")) {
-                      deleteChat.mutate({
-                        id: chat.id,
-                      });
-                    }
-                  }}
-                  className="mr-2 rounded p-1 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
+                  if (
+                    confirm("Delete this chat?")
+                  ) {
+                    deleteChat.mutate({
+                      id: chat.id,
+                    });
+                  }
+                }}
+                className="absolute right-3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </ScrollArea>
+);
