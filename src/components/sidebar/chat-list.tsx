@@ -57,12 +57,12 @@ function groupChatsByDate(
     today.getTime() - 7 * 24 * 60 * 60 * 1000
   );
 
-  const sections: ChatSection[] = [
-    { title: "Today", chats: [] },
-    { title: "Yesterday", chats: [] },
-    { title: "Previous 7 days", chats: [] },
-    { title: "Older", chats: [] },
-  ];
+  const sections: Record<string, ChatSection> = {
+    today: { title: "Today", chats: [] },
+    yesterday: { title: "Yesterday", chats: [] },
+    week: { title: "Previous 7 days", chats: [] },
+    older: { title: "Older", chats: [] },
+  };
 
   chats.forEach((chat) => {
     const chatDate = new Date(chat.updatedAt);
@@ -75,17 +75,17 @@ function groupChatsByDate(
     };
 
     if (chatDate >= today) {
-      sections[0].chats.push(mappedChat);
+      sections.today.chats.push(mappedChat);
     } else if (chatDate >= yesterday) {
-      sections[1].chats.push(mappedChat);
+      sections.yesterday.chats.push(mappedChat);
     } else if (chatDate >= weekAgo) {
-      sections[2].chats.push(mappedChat);
+      sections.week.chats.push(mappedChat);
     } else {
-      sections[3].chats.push(mappedChat);
+      sections.older.chats.push(mappedChat);
     }
   });
 
-  return sections.filter(
+  return Object.values(sections).filter(
     (section) => section.chats.length > 0
   );
 }
