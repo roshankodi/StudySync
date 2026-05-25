@@ -3,7 +3,6 @@
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,7 +11,6 @@ import { api } from "@/trpc/react";
 function formatRelativeTime(date: Date): string {
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();
-
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
@@ -41,22 +39,22 @@ function groupChatsByDate(
     title: string | null;
     updatedAt: Date;
     _count: { messages: number };
-  }>,
+  }>
 ): ChatSection[] {
   const now = new Date();
 
   const today = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate(),
+    now.getDate()
   );
 
   const yesterday = new Date(
-    today.getTime() - 24 * 60 * 60 * 1000,
+    today.getTime() - 24 * 60 * 60 * 1000
   );
 
   const weekAgo = new Date(
-    today.getTime() - 7 * 24 * 60 * 60 * 1000,
+    today.getTime() - 7 * 24 * 60 * 60 * 1000
   );
 
   const sections: ChatSection[] = [
@@ -77,41 +75,35 @@ function groupChatsByDate(
     };
 
     if (chatDate >= today) {
-      sections[0]!.chats.push(mappedChat);
+      sections[0].chats.push(mappedChat);
     } else if (chatDate >= yesterday) {
-      sections[1]!.chats.push(mappedChat);
+      sections[1].chats.push(mappedChat);
     } else if (chatDate >= weekAgo) {
-      sections[2]!.chats.push(mappedChat);
+      sections[2].chats.push(mappedChat);
     } else {
-      sections[3]!.chats.push(mappedChat);
+      sections[3].chats.push(mappedChat);
     }
   });
 
   return sections.filter(
-    (section) => section.chats.length > 0,
+    (section) => section.chats.length > 0
   );
 }
 
 export function ChatList() {
   const params = useParams();
+  const currentChatId = params?.chatId as string | undefined;
 
-  const currentChatId =
-    params?.chatId as string | undefined;
+  const { data: chats, isLoading, error } =
+    api.chat.list.useQuery();
 
   const utils = api.useUtils();
 
-  const {
-    data: chats,
-    isLoading,
-    error,
-  } = api.chat.list.useQuery();
-
-  const deleteChat =
-    api.chat.delete.useMutation({
-      onSuccess: async () => {
-        await utils.chat.list.invalidate();
-      },
-    });
+  const deleteChat = api.chat.delete.useMutation({
+    onSuccess: async () => {
+      await utils.chat.list.invalidate();
+    },
+  });
 
   if (isLoading) {
     return (
@@ -131,18 +123,18 @@ export function ChatList() {
   if (error) {
     return (
       <ScrollArea className="flex-1">
-        <div className="px-2 py-4 text-center text-sm text-gray-500">
+        <div className="px-2 py-4 text-center text-sm">
           Failed to load chats
         </div>
       </ScrollArea>
     );
   }
 
-  if (!chats?.length) {
+  if (!chats || chats.length === 0) {
     return (
       <ScrollArea className="flex-1">
-        <div className="px-2 py-4 text-center text-sm text-gray-500">
-          No chats yet. Start a new conversation!
+        <div className="px-2 py-4 text-center text-sm">
+          No chats yet
         </div>
       </ScrollArea>
     );
@@ -151,69 +143,68 @@ export function ChatList() {
   const sections = groupChatsByDate(chats);
 
   return (
-  <ScrollArea className="flex-1">
-    <div className="space-y-5">
-      {sections.map((section) => (
-        <div key={section.title}>
-          <div className="px-2 pt-3 pb-2 first:pt-0">
-            <h3 className="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-              {section.title}
-            </h3>
-          </div>
+    <ScrollArea className="flex-1">
+      <div className="space-y-5">
 
-          {section.chats.map((chat) => (
-            <div
-              key={chat.id}
-              className="group relative flex items-center"
-            >
-              <Button
-                asChild
-                variant="ghost"
+        {sections.map((section) => (
+          <div key={section.title}>
+
+            <div className="px-2 pt-3 pb-2">
+              <h3 className="text-xs font-medium uppercase text-gray-500">
+                {section.title}
+              </h3>
+            </div>
+
+            {section.chats.map((chat) => (
+              <div
+                key={chat.id}
                 className={cn(
-                  "relative h-auto w-full justify-start px-3 py-2.5 text-left font-normal",
-                  "rounded-md text-sm text-gray-700 transition-colors duration-150",
-                  "hover:bg-blue-50 hover:text-gray-900 hover:ring-1 hover:ring-blue-200",
-                  "dark:text-gray-300 dark:hover:bg-blue-950/50 dark:hover:text-white dark:hover:ring-blue-800",
+                  "group flex items-center justify-between rounded-md px-2 hover:bg-blue-50",
                   currentChatId === chat.id &&
-                    "bg-blue-50 text-gray-900 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-white dark:ring-blue-800"
+                    "bg-blue-50"
                 )}
-                size="sm"
               >
-                <Link
-                  href={`/chat/${chat.id}`}
-                  className="block w-full truncate pr-8"
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="flex-1 justify-start text-left"
                 >
-                  <div className="truncate">
-                    {chat.title ?? "New Chat"}
-                  </div>
+                  <Link href={`/chat/${chat.id}`}>
+                    <div>
+                      <div className="truncate">
+                        {chat.title ?? "New Chat"}
+                      </div>
 
-                  <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {formatRelativeTime(new Date(chat.updatedAt))}
-                  </div>
-                </Link>
-              </Button>
+                      <div className="text-xs text-gray-500">
+                        {formatRelativeTime(
+                          new Date(chat.updatedAt)
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </Button>
 
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                  if (
-                    confirm("Delete this chat?")
-                  ) {
                     deleteChat.mutate({
                       id: chat.id,
                     });
-                  }
-                }}
-                className="absolute right-3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  </ScrollArea>
-);
+                  }}
+                  className="opacity-0 transition-opacity group-hover:opacity-100 p-2 hover:text-red-500"
+                >
+                  <Trash2 size={16}/>
+                </button>
+
+              </div>
+            ))}
+
+          </div>
+        ))}
+
+      </div>
+    </ScrollArea>
+  );
+}
