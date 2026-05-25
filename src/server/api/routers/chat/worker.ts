@@ -9,7 +9,9 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/server/db";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
+
+const supabase = getSupabase();
 
 interface FileJobData {
   fileId: string;

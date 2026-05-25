@@ -4,7 +4,9 @@ import type { Prisma } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { base64ToFile } from "@/lib/utils";
 import { uploadToSupabase } from "./helper";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
+
+const supabase = getSupabase();
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 
