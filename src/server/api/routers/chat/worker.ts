@@ -9,9 +9,6 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@/server/db";
-import { getSupabase } from "@/lib/supabase";
-
-const supabase = getSupabase();
 
 interface FileJobData {
   fileId: string;
@@ -60,7 +57,7 @@ function getRedisConnection() {
 
   return new IORedis({
     host: process.env.REDIS_HOST ?? "127.0.0.1",
-    port: parseInt(process.env.REDIS_PORT ?? "6379"),
+    port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
     maxRetriesPerRequest: null,
   });
 }
@@ -76,9 +73,7 @@ const worker = new Worker<FileJobData>(
   "file-upload-queue",
   async (job) => {
     try {
-      console.log(
-        `Processing file: ${job.data.fileId}`
-      );
+      console.log(`Processing file: ${job.data.fileId}`);
 
       const { fileId } = job.data;
 
@@ -93,83 +88,65 @@ const worker = new Worker<FileJobData>(
       }
 
       const { data: fileBlob, error } =
-        await getSupabase().storage
-          .from("documents")
-          .download(fileRecord.supabasePath);
+        await fetch(fileRecord.supabasePath).then(async (res) => {
+          if (!res.ok) {
+            throw new Error("Supabase file download failed");
+          }
+          return { data: await res.blob(), error: null };
+        });
 
       if (error || !fileBlob) {
-        throw new Error(
-          "Supabase file download failed"
-        );
+        throw new Error("Supabase file download failed");
       }
 
       const loader = new PDFLoader(fileBlob);
 
       const docs = await loader.load();
 
-            const splitter =
-      new RecursiveCharacterTextSplitter({
-        chunkSize:500,
-        chunkOverlap:100
+      const splitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 500,
+        chunkOverlap: 100,
       });
 
-      const chunks =
-        await splitter.splitDocuments(docs);
+      const chunks = await splitter.splitDocuments(docs);
 
-      const texts = chunks.map(
-        (chunk) => chunk.pageContent,
-      );
+      const texts = chunks.map((chunk) => chunk.pageContent);
 
       if (texts.length === 0) {
-        throw new Error(
-          "No text extracted from PDF"
-        );
+        throw new Error("No text extracted from PDF");
       }
 
-      console.log(
-        `Generating ${texts.length} embeddings...`
-      );
+      console.log(`Generating ${texts.length} embeddings...`);
 
       const embeddings =
         (await hf.featureExtraction({
-          model:
-            "sentence-transformers/all-MiniLM-L6-v2",
+          model: "sentence-transformers/all-MiniLM-L6-v2",
           inputs: texts,
         })) as number[][];
 
       if (!embeddings?.length) {
-        throw new Error(
-          "Embedding generation failed"
-        );
+        throw new Error("Embedding generation failed");
       }
 
-      const points = chunks.map(
-        (chunk, index) => ({
-          id: uuidv4(),
-          vector: embeddings[index] ?? [],
-          payload: {
-            ...chunk.metadata,
-            content: chunk.pageContent,
-            fileId,
-          },
-        }),
-      );
-
-      await qdrantClient.upsert(
-        collectionName,
-        {
-          points,
+      const points = chunks.map((chunk, index) => ({
+        id: uuidv4(),
+        vector: embeddings[index] ?? [],
+        payload: {
+          ...chunk.metadata,
+          content: chunk.pageContent,
+          fileId,
         },
-      );
+      }));
+
+      await qdrantClient.upsert(collectionName, {
+        points,
+      });
 
       console.log(
         `Stored ${points.length} vectors for file ${fileId}`,
       );
     } catch (err) {
-      console.error(
-        "Worker processing error:",
-        err,
-      );
+      console.error("Worker processing error:", err);
       throw err;
     }
   },
@@ -180,8 +157,6 @@ export { worker };
 
 ensureCollectionExists()
   .then(() => {
-    console.log(
-      "Worker is listening for jobs..."
-    );
+    console.log("Worker is listening for jobs...");
   })
   .catch(console.error);
