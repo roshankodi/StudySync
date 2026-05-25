@@ -1,14 +1,18 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
+
 function formatRelativeTime(date: Date): string {
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();
+
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
@@ -17,6 +21,7 @@ function formatRelativeTime(date: Date): string {
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
   if (diffInHours < 24) return `${diffInHours}h ago`;
   if (diffInDays < 7) return `${diffInDays}d ago`;
+
   return date.toLocaleDateString();
 }
 
@@ -39,9 +44,20 @@ function groupChatsByDate(
   }>,
 ): ChatSection[] {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+
+  const yesterday = new Date(
+    today.getTime() - 24 * 60 * 60 * 1000,
+  );
+
+  const weekAgo = new Date(
+    today.getTime() - 7 * 24 * 60 * 60 * 1000,
+  );
 
   const sections: ChatSection[] = [
     { title: "Today", chats: [] },
@@ -52,6 +68,7 @@ function groupChatsByDate(
 
   chats.forEach((chat) => {
     const chatDate = new Date(chat.updatedAt);
+
     const mappedChat = {
       id: chat.id,
       title: chat.title,
@@ -70,14 +87,31 @@ function groupChatsByDate(
     }
   });
 
-  return sections.filter((section) => section.chats.length > 0);
+  return sections.filter(
+    (section) => section.chats.length > 0,
+  );
 }
 
 export function ChatList() {
   const params = useParams();
-  const currentChatId = params?.chatId as string | undefined;
 
-  const { data: chats, isLoading, error } = api.chat.list.useQuery();
+  const currentChatId =
+    params?.chatId as string | undefined;
+
+  const utils = api.useUtils();
+
+  const {
+    data: chats,
+    isLoading,
+    error,
+  } = api.chat.list.useQuery();
+
+  const deleteChat =
+    api.chat.delete.useMutation({
+      onSuccess: async () => {
+        await utils.chat.list.invalidate();
+      },
+    });
 
   if (isLoading) {
     return (
@@ -97,17 +131,17 @@ export function ChatList() {
   if (error) {
     return (
       <ScrollArea className="flex-1">
-        <div className="px-2 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="px-2 py-4 text-center text-sm text-gray-500">
           Failed to load chats
         </div>
       </ScrollArea>
     );
   }
 
-  if (!chats || chats.length === 0) {
+  if (!chats?.length) {
     return (
       <ScrollArea className="flex-1">
-        <div className="px-2 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="px-2 py-4 text-center text-sm text-gray-500">
           No chats yet. Start a new conversation!
         </div>
       </ScrollArea>
@@ -121,35 +155,61 @@ export function ChatList() {
       <div className="space-y-5">
         {sections.map((section) => (
           <div key={section.title}>
-            <div className="px-2 pt-3 pb-2 first:pt-0">
-              <h3 className="text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+            <div className="px-2 pt-3 pb-2">
+              <h3 className="text-xs font-medium tracking-wider uppercase text-gray-500">
                 {section.title}
               </h3>
             </div>
+
             {section.chats.map((chat) => (
-              <Button
+              <div
                 key={chat.id}
-                asChild
-                variant="ghost"
-                className={cn(
-                  "relative h-auto w-full justify-start px-3 py-2.5 text-left font-normal",
-                  "rounded-md text-sm text-gray-700 transition-colors duration-150",
-                  "hover:bg-blue-50 hover:text-gray-900 hover:ring-1 hover:ring-blue-200 dark:text-gray-300 dark:hover:bg-blue-950/50 dark:hover:text-white dark:hover:ring-blue-800",
-                  currentChatId === chat.id &&
-                    "bg-blue-50 text-gray-900 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-white dark:ring-blue-800",
-                )}
-                size="sm"
+                className="group relative"
               >
-                <Link href={`/chat/${chat.id}`} className="block truncate">
-                  <div className="truncate group-data-[collapsible=icon]:hidden">
-                    {chat.title ?? "New Chat"}
-                  </div>
-                  <div className="mt-0.5 text-xs text-gray-500 group-data-[collapsible=icon]:hidden dark:text-gray-400">
-                    {formatRelativeTime(new Date(chat.updatedAt))}
-                  </div>
-                  <div className="hidden h-2 w-2 rounded-full bg-blue-600 group-data-[collapsible=icon]:block dark:bg-blue-400" />
-                </Link>
-              </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className={cn(
+                    "h-auto w-full justify-start rounded-md px-3 py-2.5 pr-10 text-left font-normal",
+                    "text-sm text-gray-700 transition-colors",
+                    "hover:bg-blue-50 hover:text-gray-900",
+                    currentChatId ===
+                      chat.id &&
+                      "bg-blue-50 text-gray-900 ring-1 ring-blue-200",
+                  )}
+                >
+                  <Link href={`/chat/${chat.id}`}>
+                    <div className="truncate">
+                      {chat.title ??
+                        "New Chat"}
+                    </div>
+
+                    <div className="mt-1 text-xs text-gray-500">
+                      {formatRelativeTime(
+                        new Date(
+                          chat.updatedAt,
+                        ),
+                      )}
+                    </div>
+                  </Link>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 right-2 h-7 w-7 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    deleteChat.mutate({
+                      chatId: chat.id,
+                    });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             ))}
           </div>
         ))}

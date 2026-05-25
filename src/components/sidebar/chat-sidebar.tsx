@@ -35,7 +35,6 @@ export function ChatSidebar({ user }: ChatSidebarProps) {
             </div>
             <span className="text-base font-bold text-gray-900 group-data-[collapsible=icon]:hidden dark:text-white">
               StudySync
-              <span className="text-blue-600 dark:text-blue-400">LM</span>
             </span>
           </div>
           <div className="group-data-[collapsible=icon]:hidden"></div>
