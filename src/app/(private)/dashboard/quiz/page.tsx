@@ -63,20 +63,59 @@ function QuizPageContent() {
 
   const saveQuizAttemptMutation = api.chat.saveQuizAttempt.useMutation();
 
-  const calculateScore = () => {
-    let correct = 0;
-    generatedQuestions.forEach((question, index) => {
-      const userAnswer = userAnswers[index];
-      if (userAnswer !== undefined) {
-        if (question.options && question.options.length > 0) {
-          if (parseInt(userAnswer) === question.correctAnswer) {
-            correct++;
-          }
-        }
-      }
-    });
-    return correct;
-  };
+  const isAnswerCorrect = (
+  question: QuizQuestion,
+  userAnswer?: string,
+) => {
+  if (userAnswer === undefined || userAnswer.trim() === "") {
+    return false;
+  }
+
+  // MCQ
+  if (question.options && question.options.length > 0) {
+    return parseInt(userAnswer) === question.correctAnswer;
+  }
+
+  // SAQ / LAQ
+  const normalizedUser = userAnswer
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "");
+
+  const normalizedCorrect = String(question.correctAnswer)
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "");
+
+  const correctWords = normalizedCorrect
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const userWords = normalizedUser
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const matchedWords = userWords.filter((word) =>
+    correctWords.includes(word),
+  );
+
+  const similarity =
+    matchedWords.length / Math.max(correctWords.length, 1);
+
+  return similarity >= 0.6;
+};
+
+const calculateScore = () => {
+  let correct = 0;
+
+  generatedQuestions.forEach((question, index) => {
+    if (isAnswerCorrect(question, userAnswers[index])) {
+      correct++;
+    }
+  });
+
+  return correct;
+};
 
   useEffect(() => {
     const docId = searchParams.get("docId");
@@ -214,9 +253,17 @@ function QuizPageContent() {
                       />
                     </SelectTrigger>
                     <SelectContent
-                      className="animate-in fade-in-0 zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:duration-300"
-                      align="start"
-                      sideOffset={4}
+                      position="popper"
+                      sideOffset={5}
+                       className="
+                       z-50
+                       max-h-60
+                        overflow-y-auto
+                        rounded-md
+                       border
+                       bg-white
+                       dark:bg-gray-800
+                     "
                     >
                       {isLoadingDocuments ? (
                         <SelectItem value="loading" disabled>
@@ -251,10 +298,19 @@ function QuizPageContent() {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent
-                      className="animate-in fade-in-0 zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:duration-300"
-                      align="start"
-                      sideOffset={4}
+                      position="popper"
+                      sideOffset={5}
+                      className="
+                        z-50
+                        max-h-60
+                        overflow-y-auto
+                        rounded-md
+                        border
+                        bg-white
+                        dark:bg-gray-800
+                      "
                     >
+
                       <SelectItem value="MCQ">Multiple Choice</SelectItem>
                       <SelectItem value="SAQ">Short Answer</SelectItem>
                       <SelectItem value="LAQ">Long Answer</SelectItem>
@@ -274,9 +330,17 @@ function QuizPageContent() {
                       <SelectValue placeholder="Select number" />
                     </SelectTrigger>
                     <SelectContent
-                      className="animate-in fade-in-0 zoom-in-98 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:duration-300"
-                      align="start"
-                      sideOffset={4}
+                      position="popper"
+                      sideOffset={5}
+                      className="
+                        z-50
+                        max-h-60
+                        overflow-y-auto
+                        rounded-md
+                        border
+                        bg-white
+                        dark:bg-gray-800
+                      "
                     >
                       <SelectItem value="3">3 Questions</SelectItem>
                       <SelectItem value="5">5 Questions</SelectItem>
@@ -402,7 +466,22 @@ function QuizPageContent() {
                   <Textarea
                     placeholder="Type your answer here..."
                     rows={6}
-                    className="resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    value={userAnswers[currentQuestion] ?? ""}
+                    onChange={(e) => {
+                      setUserAnswers((prev) => ({
+                        ...prev,
+                        [currentQuestion]: e.target.value,
+                      }));
+                    }}
+                    className="
+                      resize-none
+                      border-gray-200
+                      focus:border-blue-500
+                      focus:ring-blue-500
+                      dark:border-gray-600
+                      dark:bg-gray-700
+                      dark:text-white
+                    "
                   />
                 )}
 
@@ -490,11 +569,7 @@ function QuizPageContent() {
             <div className="space-y-4">
               {generatedQuestions.map((q: QuizQuestion, idx: number) => {
                 const userAnswer = userAnswers[idx];
-                const isCorrect =
-                  userAnswer !== undefined &&
-                  (q.options && q.options.length > 0
-                    ? parseInt(userAnswer) === q.correctAnswer
-                    : false);
+                const isCorrect = isAnswerCorrect(q, userAnswer);
 
                 return (
                   <Card
@@ -516,7 +591,7 @@ function QuizPageContent() {
                           <p className="mb-3 font-semibold text-gray-900 dark:text-white">
                             {q.question}
                           </p>
-                          {q.options && q.options.length > 0 && (
+                          {q.options && q.options.length > 0 ? (
                             <>
                               <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
                                 Your answer:{" "}
@@ -526,12 +601,29 @@ function QuizPageContent() {
                                     : "Not answered"}
                                 </span>
                               </p>
+
                               <p className="mb-3 text-sm text-green-600 dark:text-green-400">
                                 Correct answer:{" "}
                                 <span className="font-medium">
                                   {typeof q.correctAnswer === "number"
                                     ? q.options[q.correctAnswer]
                                     : q.correctAnswer}
+                                </span>
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                                Your answer:{" "}
+                                <span className="font-medium">
+                                  {userAnswer || "Not answered"}
+                                </span>
+                              </p>
+
+                              <p className="mb-3 text-sm text-green-600 dark:text-green-400">
+                                Correct answer:{" "}
+                                <span className="font-medium">
+                                  {q.correctAnswer}
                                 </span>
                               </p>
                             </>
