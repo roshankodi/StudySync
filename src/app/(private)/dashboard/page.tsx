@@ -83,7 +83,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                  StudySync <span className="text-blue-500">LM</span>
+                  StudySync
                 </h1>
               </div>
             </div>

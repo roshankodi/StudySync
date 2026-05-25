@@ -141,7 +141,7 @@ function QuizPageContent() {
               </div>
               <div>
                 <h1 className="text-base font-semibold text-gray-900 dark:text-white">
-                  StudySync <span className="text-blue-500">LM</span>
+                  StudySync
                 </h1>
               </div>
             </div>
