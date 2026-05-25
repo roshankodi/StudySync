@@ -616,7 +616,7 @@ const calculateScore = () => {
                               <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
                                 Your answer:{" "}
                                 <span className="font-medium">
-                                  {userAnswer || "Not answered"}
+                                  {userAnswer ?? "Not answered"}
                                 </span>
                               </p>
 
