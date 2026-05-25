@@ -72,7 +72,7 @@ export function ChatList() {
               href={`/chat/${chat.id}`}
               className="flex-1 truncate text-sm font-medium"
             >
-              {chat.title || "New Chat"}
+              {chat.title ?? "New Chat"}
             </Link>
 
             <button
