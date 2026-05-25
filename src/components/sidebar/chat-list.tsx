@@ -203,7 +203,7 @@ export function ChatList() {
                     e.stopPropagation();
 
                     deleteChat.mutate({
-                      chatId: chat.id,
+                      id: chat.id,
                     });
                   }}
                 >
