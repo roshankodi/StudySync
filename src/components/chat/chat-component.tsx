@@ -191,7 +191,7 @@ export function ChatComponent({ chatId }: ChatComponentProps) {
                   </h1>
                 </div>
               ) : (
-                <div className="mx-auto w-full max-w-5xl space-y-4">
+                <div className="mx-auto w-full max-w-6xl space-y-4">
                   {messages.map((message, index) => {
                     const messageData = chatData?.messages.find(
                       (msg) => msg.id === message.id,

@@ -134,7 +134,7 @@ export function ChatInput({
   };
   return (
     <div className="border-t border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-black">
-      <div className="mx-auto w-full max-w-5xl">
+      <div className="mx-auto w-full max-w-6xl">
         {uploadedFiles.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
             {uploadedFiles.map((file) => (
