@@ -106,10 +106,19 @@ Centralized AI-powered learning dashboard with document management and analytics
 
 ---
 
-### 🤖 AI Tutor / Chat Assistant
-Context-aware AI tutor capable of answering questions from uploaded materials and general learning queries.
+### 📝 AI Quiz Generator
+Generate intelligent quizzes with MCQ, SAQ, and LAQ support instantly from study materials.
 
-![AI Tutor]
+<table>
+  <tr>
+    <td><img src="./screenshots/quiz1.png" width="100%"/></td>
+    <td><img src="./screenshots/quiz2.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td><img src="./screenshots/quiz3.png" width="100%"/></td>
+    <td><img src="./screenshots/quiz4.png" width="100%"/></td>
+  </tr>
+</table>
 
 ---
 
