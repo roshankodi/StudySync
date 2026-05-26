@@ -32,8 +32,6 @@ Secure Google OAuth authentication with protected routes and session management.
 
 ![Authentication](./screenshots/auth.png)
 
-![Authentication](./screenshots/auth.png)
-
 ---
 
 ### 🏠 Dashboard
@@ -41,7 +39,7 @@ Centralized AI-powered learning dashboard with document management and analytics
 
 ![Dashboard](./screenshots/dashboard.jpeg)
 
-![Dashboard](./screenshots/dashboard-phone.png)
+![Dashboard](./screenshots/dashboard-phone.jpeg)
 
 ---
 
@@ -50,7 +48,7 @@ Interactive AI-powered tutor capable of answering both document-based and genera
 
 ![Dashboard](./screenshots/ai.png)
 
-![Dashboard](./screenshots/ai-phone.png)
+![Dashboard](./screenshots/ai-phone.jpeg)
 
 ---
 
