@@ -4,89 +4,24 @@
 
 ---
 
-## 🌐 Live Demo
+# 🌐 Live Demo
 
-https://studysync-8v0b.onrender.com
+🔗 https://studysync-8v0b.onrender.com
 
 ---
 
 # ✨ Features
 
-## 🤖 AI Tutor
-
-- An intelligent AI-powered study assistant.
-- Ask questions on any topic — not limited to uploaded PDFs
-- Get instant AI-generated explanations and concept breakdowns
-- Learn interactively through natural conversations like chatting with a personal tutor
-- Supports programming, computer science, mathematics, theory subjects, interview prep and more
-- Combines contextual document understanding with general AI reasoning capabilities
-- Designed to provide personalized, real-time academic assistance
-
----
-
-## 📄 AI Document Analysis
-- Upload PDFs and study materials
-- Context-aware document chat
-- Smart semantic understanding of documents
-- AI-powered extraction of important concepts
-
----
-
-## 📝 AI Quiz Generation
-Generate quizzes instantly from uploaded study material.
-
-### Supported Quiz Types
-- Multiple Choice Questions (MCQ)
-- Short Answer Questions (SAQ)
-- Long Answer Questions (LAQ)
-
-### Features
-- Automatic evaluation
-- Instant explanations
-- Smart scoring system
-- Quiz history tracking
-
----
-
-## 📚 AI Summarizer
-Generate:
-- Quick summaries
-- Detailed chapter notes
-- Revision notes
-- Key concepts
-- Exam-focused study material
-
----
-
-## 📊 Analytics Dashboard
-Track learning progress with:
-- Quiz performance
-- Accuracy tracking
-- Learning insights
-- Study statistics
-- Progress monitoring
-
----
-
-## 🔍 Semantic Search
-Search concepts intelligently inside uploaded documents using AI-powered contextual understanding instead of simple keyword matching.
-
----
-
-## 🌙 Modern User Experience
-- Fully responsive design
-- Dark / Light mode
-- Clean dashboard UI
-- Smooth interactions
-- Mobile-friendly layout
-
----
-
-## 🔐 Authentication & Security
-- Secure Google OAuth authentication
-- Protected routes
-- Session management with NextAuth
-- Database-backed authentication system
+- 🤖 AI Tutor with conversational learning and real-time concept explanations
+- 📄 AI-powered PDF analysis with contextual document understanding
+- 📝 Automatic quiz generation supporting MCQ, SAQ, and LAQ formats
+- 📚 AI summaries, revision notes, and key concept extraction
+- 🔍 Semantic search powered by vector embeddings and RAG architecture
+- 📊 Learning analytics with quiz tracking and performance insights
+- 🌙 Modern responsive UI with dark/light mode support
+- 🔐 Secure authentication using Google OAuth and NextAuth
+- ⚡ Full-stack architecture powered by Next.js, Prisma, tRPC, Redis, and PostgreSQL
+- 🐳 Docker-ready deployment with Render + Supabase integration
 
 ---
 
@@ -97,49 +32,54 @@ Secure Google OAuth authentication with protected routes and session management.
 
 ![Authentication](./screenshots/auth.png)
 
+![Authentication](./screenshots/auth.png)
+
 ---
 
 ### 🏠 Dashboard
 Centralized AI-powered learning dashboard with document management and analytics.
 
-![Dashboard](./screenshots/dashboard.png)
+![Dashboard](./screenshots/dashboard.jpeg)
+
+![Dashboard](./screenshots/dashboard-phone.png)
+
+---
+
+## 🤖 AI Tutor
+Interactive AI-powered tutor capable of answering both document-based and general learning questions.
+
+![Dashboard](./screenshots/ai.png)
+
+![Dashboard](./screenshots/ai-phone.png)
 
 ---
 
 ### 📝 AI Quiz Generator
 Generate intelligent quizzes with MCQ, SAQ, and LAQ support instantly from study materials.
 
-<table>
-  <tr>
-    <td><img src="./screenshots/quiz1.png" width="100%"/></td>
-    <td><img src="./screenshots/quiz2.png" width="100%"/></td>
-  </tr>
-  <tr>
-    <td><img src="./screenshots/quiz3.png" width="100%"/></td>
-    <td><img src="./screenshots/quiz4.png" width="100%"/></td>
-  </tr>
-</table>
+![Quiz 1](./screenshots/quiz1.png)
 
----
+![Quiz 2](./screenshots/quiz2.png)
 
-### 📝 AI Quiz Generator
-Generate intelligent quizzes with MCQ, SAQ, and LAQ support instantly from study materials.
-
-![Quiz Generator](./screenshots/quiz1.png)(./screenshots/quiz2.png)(./screenshots/quiz3.png)(./screenshots/quiz4.png)
+![Quiz- saq](./screenshots/saq.png)
 
 ---
 
 ### 📊 Quiz Results & Evaluation
 Real-time quiz evaluation with scoring, explanations, and performance insights.
 
-![Quiz Results](./screenshots/quizresults.png)
+![Quiz Results](./screenshots/final.png)
+
+![Quiz Results](./screenshots/final2.png)
 
 ---
 
 ### 📄 PDF Viewer & Document Processing
 Upload, preview, and interact with study materials seamlessly.
 
-![PDF Viewer]
+![PDF Viewer](./screenshots/upload2.png)
+
+![PDF Viewer](./screenshots/upload.png)
 
 ---
 
@@ -325,8 +265,7 @@ StudySync uses Retrieval-Augmented Generation (RAG) architecture to:
 
 ## Kodi Roshan
 
-Computer Science Engineering Student  
-Full-Stack Developer & AI Enthusiast
+Computer Science Engineering Student • Full-Stack Developer • AI Enthusiast
 
 GitHub:
 https://github.com/roshankodi
